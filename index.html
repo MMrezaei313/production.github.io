@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سیستم گزارش تولید - کارخانجات شیشه قزوین</title>
+    <meta name="theme-color" content="#2c3e50">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/css/persian-datepicker.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="connection-status" class="connection-status" style="display: none;"></div>
+    <div id="sync-status" class="sync-status" style="display: none;"></div>
+    <div id="notification-area"></div>
+
+    <div class="floating-buttons">
+        <button class="floating-btn" title="گزارش سریع" onclick="showQuickReport()">
+            <i class="fas fa-chart-bar"></i>
+        </button>
+        <button class="floating-btn success" title="ذخیره سریع" onclick="quickSave()">
+            <i class="fas fa-save"></i>
+        </button>
+        <button class="floating-btn warning" title="پرینت" onclick="quickPrint()">
+            <i class="fas fa-print"></i>
+        </button>
+    </div>
+
+    <div id="login-section" class="login-container">
+        <div class="login-box">
+            <h2><i class="fas fa-industry"></i> ورود به گزارش تولید</h2>
+            <div class="form-group">
+                <label for="username"><i class="fas fa-user"></i> نام کاربری:</label>
+                <input type="text" id="username" placeholder="شناسه کاربری">
+                <div class="error-message" id="username-error"></div>
+            </div>
+            <div class="form-group">
+                <label for="password"><i class="fas fa-lock"></i> رمز عبور:</label>
+                <input type="password" id="password" placeholder="رمز عبور">
+                <div class="error-message" id="password-error"></div>
+            </div>
+            <button class="login-btn" onclick="login()"><i class="fas fa-sign-in-alt"></i> ورود به سیستم</button>
+            <div style="margin-top: 20px; text-align: center; font-size: 14px; color: #666;">
+                <p>برای ورود به سیستم از اطلاعات زیر استفاده کنید:</p>
+                <p>نام کاربری: abolfazl | رمز عبور: a321</p>
+                <p>نام کاربری: morteza | رمز عبور: m456</p>
+                <p>نام کاربری: reza | رمز عبور: r789</p>
+                <p>نام کاربری: director | رمز عبور: d012</p>
+                <p>نام کاربری: manager | رمز عبور: 2866</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="app-content" style="display:none;">
+        <div class="header">
+            <h1><i class="fas fa-industry"></i> کارخانجات شیشه قزوین</h1>
+            <h2>سیستم گزارش روزانه وضعیت عملیاتی کوره‌ها</h2>
+            <div id="datetime" style="margin-top: 10px; font-size: 16px;"></div>
+            <div id="welcome-message" class="welcome"></div>
+            <button class="logout-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i> خروج</button>
+        </div>
+
+        <div class="live-stats">
+            <div class="stat-item">
+                <div class="stat-value" id="total-reports">0</div>
+                <div class="stat-label">گزارشات ثبت شده</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="today-production">0</div>
+                <div class="stat-label">تولید امروز (m²)</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="avg-efficiency">0%</div>
+                <div class="stat-label">میانگین راندمان</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="monthly-total">0</div>
+                <div class="stat-label">تولید ماه جاری</div>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-button active" onclick="openTab(event, 'koor1')">
+                <i class="fas fa-fire"></i> کوره ۱
+            </button>
+            <button class="tab-button" onclick="openTab(event, 'koor2')">
+                <i class="fas fa-fire"></i> کوره ۲
+            </button>
+            <button class="tab-button" onclick="openTab(event, 'reports')">
+                <i class="fas fa-chart-line"></i> گزارشات
+            </button>
+            <button class="tab-button" id="analysis-tab" onclick="openTab(event, 'analysis')" style="display:none;">
+               <i class="fas fa-chart-bar"></i> تحلیل و داشبورد
+            </button>
+            <button class="tab-button" id="management-tab" onclick="showReportManagement()" style="display:none;">
+                <i class="fas fa-cog"></i> مدیریت گزارشات
+            </button>
+        </div>
+
+        <div id="koor1" class="tab-content active">
+            <div class="form-container">
+                <div class="form-group">
+                    <label for="k1-date"><i class="fas fa-calendar-alt"></i> تاریخ:</label>
+                    <input type="text" id="k1-date" class="date-picker">
+                </div>
+                
+                <div class="form-group">
+                    <label for="k1-shift"><i class="fas fa-clock"></i> شیفت کاری:</label>
+                    <select id="k1-shift">
+                        <option value="6-14">۶ تا ۱۴</option>
+                        <option value="14-22">۱۴ تا ۲۲</option>
+                        <option value="22-6">۲۲ تا ۶</option>
+                    </select>
+                </div>
+
+                <h3><i class="fas fa-industry"></i> خط تولید ۱</h3>
+                
+                <div id="k1-inputs-container">
+                    <!-- اولین گروه ورودی -->
+                    <div class="input-group" id="k1-input-group-1">
+                        <div class="input-group-header">
+                            <span class="input-group-title">ورودی تولید ۱</span>
+                            <button class="remove-input-btn" onclick="removeInputGroup('k1-input-group-1')">حذف</button>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="k1-width-1">عرض با کناره (سانتی متر):</label>
+                            <input type="number" id="k1-width-1" step="0.01">
+                            <div class="error-message" id="k1-width-1-error"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="k1-weight-1">وزن یک متر مربع شیشه (کیلوگرم):</label>
+                            <input type="number" id="k1-weight-1" step="0.001">
+                            <div class="error-message" id="k1-weight-1-error"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="k1-thickness-1">ضخامت (میلیمتر):</label>
+                            <input type="number" id="k1-thickness-1" step="0.1">
+                            <div class="error-message" id="k1-thickness-1-error"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="k1-design-1">نوع طرح:</label>
+                            <select id="k1-design-1">
+                                <option value="برفی">برفی</option>
+                                <option value="کاراتاچی">کاراتاچی</option>
+                                <option value="برگ بیدی">برگ بیدی</option>
+                                <option value="بازوبندی">بازوبندی</option>
+                                <option value="بادی">بادی</option>
+                                <option value="شاپرکی">شاپرکی</option>
+                                <option value="الماسی">الماسی</option>
+                                <option value="ماتریکس">ماتریکس</option>
+                                <option value="نی ریز">نی ریز</option>
+                                <option value="حبابی">حبابی</option>
+                                <option value="بامبو">بامبو</option>
+                                <option value="مدادی">مدادی</option>
+                                <option value="راه مات">راه مات</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="k1-speed-1">سرعت (اینچ/دقیقه):</label>
+                            <input type="number" id="k1-speed-1" step="0.1">
+                            <div class="error-message" id="k1-speed-1-error"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="k1-hours-1">ساعات کارکرد:</label>
+                            <input type="number" id="k1-hours-1" step="0.1">
+                            <div class="error-message" id="k1-hours-1-error"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="k1-delivery-width-1">عرض تحویلی (سانتی متر):</label>
+                            <input type="number" id="k1-delivery-width-1" step="0.01">
+                            <div class="error-message" id="k1-delivery-width-1-error"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="k1-delivery-length-1">طول تحویلی (سانتی متر):</label>
+                            <input type="number" id="k1-delivery-length-1" step="0.01">
+                            <div class="error-message" id="k1-delivery-length-1-error"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="k1-production-1">مقدار تولید واقعی (متر مربع برحسب 2میل):</label>
+                            <input type="number" id="k1-production-1" step="0.01">
+                            <div class="error-message" id="k1-production-1-error"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button class="add-input-btn" onclick="addInputGroup('k1')">
+                    <i class="fas fa-plus"></i> افزودن ورودی جدید
+                </button>
+                
+                <div class="form-group">
+                    <label for="k1-batch">تعداد بچ مصرفی:</label>
+                    <input type="number" id="k1-batch">
+                    <div class="error-message" id="k1-batch-error"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="k1-supervisor-report"><i class="fas fa-clipboard"></i> گزارش سرپرست شیفت:</label>
+                    <textarea id="k1-supervisor-report" rows="4" placeholder="گزارش عملکرد، مشکلات، توضیحات..."></textarea>
+                </div>
+                <div id="k1-efficiency-explanation" class="efficiency-explanation" style="display:none;">
+                    <div class="form-group">
+                       <label for="k1-efficiency-reason"><i class="fas fa-exclamation-triangle"></i> توضیحات کاهش راندمان (زیر ۸۰٪):</label>
+                       <textarea id="k1-efficiency-reason" rows="3" placeholder="علت کاهش راندمان را شرح دهید..."></textarea>
+                </div>
+                </div>
+
+                
+                <div class="button-group">
+                    <button onclick="calculateKoor1()">
+                        <i class="fas fa-calculator"></i> محاسبه
+                    </button>
+                    <button class="success" onclick="saveKoor1()">
+                        <i class="fas fa-cloud-upload-alt"></i> ذخیره در ابر
+                    </button>
+                    <button class="warning" onclick="printKoor1()">
+                        <i class="fas fa-print"></i> چاپ
+                    </button>
+                    <button onclick="exportKoor1Data()">
+                        <i class="fas fa-file-export"></i> خروجی JSON
+                    </button>
+                </div>
+                
+                <div id="k1-results" class="results">
+                    <!-- نتایج محاسبات اینجا نمایش داده می‌شود -->
+                </div>
+            </div>
+        </div>
+
+        <div id="koor2" class="tab-content">
+            <div class="form-container">
+                <div class="form-group">
+                    <label for="k2-date"><i class="fas fa-calendar-alt"></i> تاریخ:</label>
+                    <input type="text" id="k2-date" class="date-picker">
+                </div>
+                
+                <div class="form-group">
+                    <label for="k2-shift"><i class="fas fa-clock"></i> شیفت کاری:</label>
+                    <select id="k2-shift">
+                        <option value="6-14">۶ تا ۱۴</option>
+                        <option value="14-22">۱۴ تا ۲۲</option>
+                        <option value="22-6">۲۲ تا ۶</option>
+                    </select>
+                </div>
+
+                <h3><i class="fas fa-industry"></i> خط تولید ۲</h3>
+                
+                <div id="k2-line2-inputs-container">
+                    <!-- اولین گروه ورودی برای خط ۲ -->
+                    <div class="input-group" id="k2-line2-input-group-1">
+                        <div class="input-group-header">
+                            <span class="input-group-title">ورودی تولید خط ۲ - ۱</span>
+                            <button class="remove-input-btn" onclick="removeInputGroup('k2-line2-input-group-1')">حذف</button>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="k2-line2-width-1">عرض با کناره (سانتی متر):</label>
+                            <input type="number" id="k2-line2-width-1" step="0.01">
+                            <div class="error-message" id="k2-line2-width-1-error"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="k2-line2-weight-1">وزن یک متر مربع شیشه (کیلوگرم):</label>
+                            <input type="number" id="k2-line2-weight-1" step="0.001">
+                            <div class="error-message" id="k2-line2-weight-1-error"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="k2-line2-thickness-1">ضخامت (میلیمتر):</label>
+                            <input type="number" id="k2-line2-thickness-1" step="0.1">
+                            <div class="error-message" id="k2-line2-thickness-1-error"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="k2-line2-design-1">نوع طرح:</label>
+                            <select id="k2-line2-design-1">
+                                <option value="برفی">برفی</option>
+                                <option value="کاراتاچی">کاراتاچی</option>
+                                <option value="برگ بیدی">برگ بیدی</option>
+                                <option value="بازوبندی">بازوبندی</option>
+                                <option value="بادی">بادی</option>
+                                <option value="شاپرکی">شاپرکی</option>
+                                <option value="الماسی">الماسی</option>
+                                <option value="ماتریکس">ماتریکس</option>
+                                <option value="نی ریز">نی ریز</option>
+                                <option value="حبابی">حبابی</option>
+                                <option value="بامبو">بامبو</option>
+                                <option value="مدادی">مدادی</option>
+                                <option value="راه مات">راه مات</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="k2-line2-speed-1">سرعت (اینچ/دقیقه):</label>
+                            <input type="number" id="k2-line2-speed-1" step="0.1">
+                            <div class="error-message" id="k2-line2-speed-1-error"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="k2-line2-hours-1">ساعات کارکرد:</label>
+                            <input type="number" id="k2-line2-hours-1" step="0.1">
+                            <div class="error-message" id="k2-line2-hours-1-error"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="k2-line2-delivery-width-1">عرض تحویلی (سانتی متر):</label>
+                            <input type="number" id="k2-line2-delivery-width-1" step="0.01">
+                            <div class="error-message" id="k2-line2-delivery-width-1-error"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="k2-line2-delivery-length-1">طول تحویلی (سانتی متر):</label>
+                            <input type="number" id="k2-line2-delivery-length-1" step="0.01">
+                            <div class="error-message" id="k2-line2-delivery-length-1-error"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="k2-line2-production-1">مقدار تولید واقعی (متر مربع برحسب 2میل):</label>
+                            <input type="number" id="k2-line2-production-1" step="0.01">
+                            <div class="error-message" id="k2-line2-production-1-error"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button class="add-input-btn" onclick="addInputGroup('k2-line2')">
+                    <i class="fas fa-plus"></i> افزودن ورودی جدید برای خط ۲
+                </button>
+
+                <h3><i class="fas fa-industry"></i> خط تولید ۳</h3>
+                
+                <div id="k2-line3-inputs-container">
+                    <!-- اولین گروه ورودی برای خط ۳ -->
+                    <div class="input-group" id="k2-line3-input-group-1">
+                        <div class="input-group-header">
+                            <span class="input-group-title">ورودی تولید خط ۳ - ۱</span>
+                            <button class="remove-input-btn" onclick="removeInputGroup('k2-line3-input-group-1')">حذف</button>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="k2-line3-width-1">عرض با کناره (سانتی متر):</label>
+                            <input type="number" id="k2-line3-width-1" step="0.01">
+                            <div class="error-message" id="k2-line3-width-1-error"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="k2-line3-weight-1">وزن یک متر مربع شیشه (کیلوگرم):</label>
+                            <input type="number" id="k2-line3-weight-1" step="0.001">
+                            <div class="error-message" id="k2-line3-weight-1-error"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="k2-line3-thickness-1">ضخامت (میلیمتر):</label>
+                            <input type="number" id="k2-line3-thickness-1" step="0.1">
+                            <div class="error-message" id="k2-line3-thickness-1-error"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="k2-line3-design-1">نوع طرح:</label>
+                            <select id="k2-line3-design-1">
+                                <option value="برفی">برفی</option>
+                                <option value="کاراتاچی">کاراتاچی</option>
+                                <option value="برگ بیدی">برگ بیدی</option>
+                                <option value="بازوبندی">بازوبندی</option>
+                                <option value="بادی">بادی</option>
+                                <option value="شاپرکی">شاپرکی</option>
+                                <option value="الماسی">الماسی</option>
+                                <option value="ماتریکس">ماتریکس</option>
+                                <option value="نی ریز">نی ریز</option>
+                                <option value="حبابی">حبابی</option>
+                                <option value="بامبو">بامبو</option>
+                                <option value="مدادی">مدادی</option>
+                                <option value="راه مات">راه مات</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="k2-line3-speed-1">سرعت (اینچ/دقیقه):</label>
+                            <input type="number" id="k2-line3-speed-1" step="0.1">
+                            <div class="error-message" id="k2-line3-speed-1-error"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="k2-line3-hours-1">ساعات کارکرد:</label>
+                            <input type="number" id="k2-line3-hours-1" step="0.1">
+                            <div class="error-message" id="k2-line3-hours-1-error"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="k2-line3-delivery-width-1">عرض تحویلی (سانتی متر):</label>
+                            <input type="number" id="k2-line3-delivery-width-1" step="0.01">
+                            <div class="error-message" id="k2-line3-delivery-width-1-error"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="k2-line3-delivery-length-1">طول تحویلی (سانتی متر):</label>
+                            <input type="number" id="k2-line3-delivery-length-1" step="0.01">
+                            <div class="error-message" id="k2-line3-delivery-length-1-error"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="k2-line3-production-1">مقدار تولید واقعی (متر مربع برحسب 2میل):</label>
+                            <input type="number" id="k2-line3-production-1" step="0.01">
+                            <div class="error-message" id="k2-line3-production-1-error"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button class="add-input-btn" onclick="addInputGroup('k2-line3')">
+                    <i class="fas fa-plus"></i> افزودن ورودی جدید برای خط ۳
+                </button>
+                
+                <div class="form-group">
+                    <label for="k2-batch">تعداد بچ مصرفی:</label>
+                    <input type="number" id="k2-batch">
+                    <div class="error-message" id="k2-batch-error"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="k2-supervisor-report"><i class="fas fa-clipboard"></i> گزارش سرپرست شیفت:</label>
+                    <textarea id="k2-supervisor-report" rows="4" placeholder="گزارش عملکرد، مشکلات، توضیحات..."></textarea>
+                </div>
+
+                <div id="k2-efficiency-explanation" class="efficiency-explanation" style="display:none;">
+                    <div class="form-group">
+                       <label for="k2-efficiency-reason"><i class="fas fa-exclamation-triangle"></i> توضیحات کاهش راندمان (زیر ۸۰٪):</label>
+                       <textarea id="k2-efficiency-reason" rows="3" placeholder="علت کاهش راندمان را شرح دهید..."></textarea>
+                   </div>
+                </div>
+                
+                <div class="button-group">
+                    <button onclick="calculateKoor2()">
+                        <i class="fas fa-calculator"></i> محاسبه
+                    </button>
+                    <button class="success" onclick="saveKoor2()">
+                        <i class="fas fa-cloud-upload-alt"></i> ذخیره در ابر
+                    </button>
+                    <button class="warning" onclick="printKoor2()">
+                        <i class="fas fa-print"></i> چاپ
+                    </button>
+                    <button onclick="exportKoor2Data()">
+                        <i class="fas fa-file-export"></i> خروجی JSON
+                    </button>
+                </div>
+                
+                <div id="k2-results" class="results">
+                    <!-- نتایج محاسبات اینجا نمایش داده می‌شود -->
+                </div>
+            </div>
+        </div>
+
+        <div id="reports" class="tab-content">
+            <div class="form-container">
+                <h3><i class="fas fa-chart-line"></i> گزارشات تولید</h3>
+                
+                <div class="button-group">
+                    <button onclick="showDailyReport()">
+                        <i class="fas fa-calendar-day"></i> گزارش روزانه
+                    </button>
+                    <button onclick="showWeeklyReport()">
+                        <i class="fas fa-calendar-week"></i> گزارش هفتگی
+                    </button>
+                    <button onclick="showMonthlyReport()">
+                        <i class="fas fa-calendar-alt"></i> گزارش ماهانه
+                    </button>
+                    <button onclick="showCustomReport()">
+                        <i class="fas fa-filter"></i> گزارش سفارشی
+                    </button>
+                </div>
+                
+                <div id="reports-results" class="results">
+                    <!-- نتایج گزارشات اینجا نمایش داده می‌شود -->
+                </div>
+            </div>
+        </div>
+
+        <div id="analysis" class="tab-content">
+          <div class="form-container">
+            <h3><i class="fas fa-chart-bar"></i> تحلیل و داشبورد مدیریتی</h3>
+            <div id="analysis-content">
+               <!-- محتوای تحلیل اینجا نمایش داده می‌شود -->
+           </div>
+        </div>
+      </div>
+
+        <!-- مودال گزارشات -->
+        <div id="report-modal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeModal()">&times;</span>
+                <h2 id="modal-title">گزارش بازه زمانی</h2>
+                <div class="modal-body">
+                    <div class="date-range">
+                        <label for="from-date">از تاریخ:</label>
+                        <input type="text" id="from-date" class="date-picker">
+                        <label for="to-date">تا تاریخ:</label>
+                        <input type="text" id="to-date" class="date-picker">
+                        <button id="generate-report" onclick="generateCustomReport()">
+                            <i class="fas fa-chart-bar"></i> تولید گزارش
+                        </button>
+                    </div>
+                    <div id="report-results"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/persian-date@1.1.0/dist/persian-date.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
